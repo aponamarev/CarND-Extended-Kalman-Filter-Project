@@ -1,6 +1,8 @@
 #include <iostream>
 #include "tools.h"
 
+#define eps 0.0001
+
 using Eigen::VectorXd;
 using Eigen::MatrixXd;
 using std::vector;
@@ -24,11 +26,11 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
                 
                 VectorXd d = estimations[i] - ground_truth[i];
                 d = d.array() * d.array();
-                d = d.array().sqrt();
                 RMSE += d;
             }
             
             RMSE /= estimations.size();
+            RMSE = RMSE.array().sqrt();
             
         } else {
             cout << "Error: Incompatible input size. Estimations size is 0 and it should be greater." << endl;
@@ -43,7 +45,8 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
 
 MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
     
-    // Calculate a Jacobian here.
+    // Jacobean matrix solution from lecture materials"
+    
     MatrixXd Hj(3,4);
     //recover state parameters
     float px = x_state(0);
@@ -51,30 +54,22 @@ MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
     float vx = x_state(2);
     float vy = x_state(3);
     
-    //TODO: YOUR CODE HERE
-    float px2 = px*px;
-    float py2 = py*py;
-    float p2sum = px2+py2;
+    //pre-compute a set of terms to avoid repeated calculation
+    float c1 = px*px+py*py;
+    float c2 = sqrt(c1);
+    float c3 = (c1*c2);
+    
     //check division by zero
-    if (p2sum<0.00001) {
-        cout << "Wrong input resulting in div/0." << endl;
-        Hj <<
-        0,0,0,0,
-        0,0,0,0,
-        0,0,0,0;
-    } else {
-        
-        float sqrt_p2sum = sqrt(p2sum);
-        float vxpy = vx*py;
-        float vypx = vy*px;
-        
-        Hj <<
-        px/sqrt_p2sum,py/sqrt_p2sum,0,0,
-        -py/p2sum,px/p2sum,0,0,
-        py*(vxpy-vypx)/pow(p2sum,3/2),
-        px*(vypx-vxpy)/pow(p2sum,3/2),px/sqrt_p2sum,py/sqrt_p2sum;
-        //compute the Jacobian matrix
-    };
+    if(fabs(c1) < 0.0001){
+        cout << "CalculateJacobian () - Error - Division by Zero" << endl;
+        return Hj;
+    }
+    float px_c2 = px/c2;
+    float py_c2 = py/c2;
+    //compute the Jacobian matrix
+    Hj << px_c2, py_c2, 0, 0,
+    -(py/c1), (px/c1), 0, 0,
+    py*(vx*py - vy*px)/c3, px*(px*vy - py*vx)/c3, px_c2, py_c2;
     
     return Hj;
 }

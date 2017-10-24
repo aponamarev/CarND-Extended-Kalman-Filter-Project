@@ -106,16 +106,14 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
             // Define measurements explicitly
             float r = measurement_pack.raw_measurements_[0];
             float p = measurement_pack.raw_measurements_[1];
-            std::cout << "Original theta: " << p << std::endl;
-            float r_d = measurement_pack.raw_measurements_[2];
+            
             // Convert polar measurements into cartesian
             float px = r * cos(p);
             float py = r * sin(p);
-            float vx = px * r_d;
-            float vy = py * r_d;
             // Assign EKF measurements: x' = f(x) + v
-            ekf_.x_ << px,py,vx,vy;
+            ekf_.x_ << px,py,0,0;
         }
+        
         else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
             /**
              Initialize state.
@@ -124,7 +122,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
             measurement_pack.raw_measurements_[0],
             measurement_pack.raw_measurements_[1], 0,0;
         }
-        
+    
         // done initializing, no need to predict or update
         previous_timestamp_ = measurement_pack.timestamp_;
         is_initialized_ = true;
@@ -145,7 +143,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     // * Update the process noise covariance matrix.
     // * Use noise_ax = 9 and noise_ay = 9 for your Q matrix.
     Eigen::VectorXd a = Eigen::VectorXd(2);
-    a << 9,9;
+    a << 9, 9;
     
     ekf_.Q_ = update_Q(dt, a);
     
@@ -156,6 +154,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
      ****************************************************************************/
     
     // Use the sensor type to perform the update step.
+    
     if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
         // Radar updates
         ekf_.H_ = tools.CalculateJacobian(ekf_.x_);
@@ -169,8 +168,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
         //Update the state and covariance matrices.
         ekf_.Update(measurement_pack.raw_measurements_);
     }
-    
     // print the output
-    cout << "x_ = " << ekf_.x_.transpose() << endl;
-    cout << "P_ = " << endl << ekf_.P_ << endl;
+    //cout << "x_ = " << ekf_.x_.transpose() << endl;
+    //cout << "P_ = " << endl << ekf_.P_ << endl;
 }

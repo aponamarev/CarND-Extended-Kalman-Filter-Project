@@ -1,6 +1,8 @@
-#include "kalman_filter.h"
-#include <cmath>
+#include <math.h>
 #include <iostream>
+#include "kalman_filter.h"
+
+#define eps 0.001
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -31,8 +33,13 @@ VectorXd KalmanFilter::h(const VectorXd x_prime) {
     float vx = x_prime(2);
     float vy = x_prime(3);
     double rho = sqrt(px*px + py*py);
-    double theta = std::atan2(py, px);
-    double rho_dot = (px*vx + py*vy) / rho;
+    double theta = atan2(py, px);
+    double rho_dot;
+    if (fabs(rho) < eps) {
+        rho_dot = 0;
+    } else {
+        rho_dot = (px*vx + py*vy) / rho;
+    }
     
     VectorXd x_polar = VectorXd(3);
     x_polar << rho, theta, rho_dot;
@@ -59,7 +66,6 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
     /*
      For radar measurements, the functions that map the x vector [px, py, vx, vy] to polar coordinates are non-linear. Instead of using H to calculate y = z - H * x', for radar measurements you'll have to use the equations that map from cartesian to polar coordinates: y = z - h(x').
      */
-    
     VectorXd y = z - h(x_);
     // Calculations are essentially the same to the Update function
     GenericUpdate(y);
@@ -73,7 +79,7 @@ void KalmanFilter::GenericUpdate(const VectorXd &y) {
     MatrixXd S = H_ * PHt_ + R_; // Total covariance
     MatrixXd K = PHt_ * S.inverse(); // Kalman gain
     // measurement update
-    x_ += (K * y);
+    x_ = x_ + (K * y);
     long x_size = x_.size();
     MatrixXd I = MatrixXd::Identity(x_size, x_size);
     P_ = (I - K * H_) * P_;
