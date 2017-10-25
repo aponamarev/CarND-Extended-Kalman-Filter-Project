@@ -49,15 +49,15 @@ MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
     
     MatrixXd Hj(3,4);
     //recover state parameters
-    float px = x_state(0);
-    float py = x_state(1);
-    float vx = x_state(2);
-    float vy = x_state(3);
+    const float px = x_state(0);
+    const float py = x_state(1);
+    const float vx = x_state(2);
+    const float vy = x_state(3);
     
     //pre-compute a set of terms to avoid repeated calculation
-    float c1 = px*px+py*py;
-    float c2 = sqrt(c1);
-    float c3 = (c1*c2);
+    const double c1 = max(float(eps), px*px + py*py);
+    const float c2 = sqrt(c1);
+    const float c3 = (c1*c2);
     
     //check division by zero
     if(fabs(c1) < 0.0001){

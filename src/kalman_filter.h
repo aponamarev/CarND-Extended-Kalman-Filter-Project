@@ -67,7 +67,8 @@ public:
 private:
     
     void GenericUpdate(const Eigen::VectorXd &y);
-    Eigen::VectorXd h(const Eigen::VectorXd x_prime);
+    Eigen::VectorXd h(const Eigen::VectorXd &x_prime);
+    void NormalizeAngle(double &phi);
     
 };
 

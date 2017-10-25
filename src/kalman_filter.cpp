@@ -24,20 +24,26 @@ void KalmanFilter::Init(VectorXd &x_in, MatrixXd &P_in, MatrixXd &F_in,
     Q_ = Q_in;
 }
 
-VectorXd KalmanFilter::h(const VectorXd x_prime) {
+void KalmanFilter::NormalizeAngle(double &phi)
+{
+    phi = atan2(sin(phi), cos(phi));
+}
+
+VectorXd KalmanFilter::h(const VectorXd &x_prime) {
     /* to calculate y for the radar sensor, we need to convert x′
      ​​  to polar coordinates. In other words, the function h(x) maps values from Cartesian coordinates to polar coordinates. So the equation for radar becomes y=z radar−h(x′).
      */
-    float px = x_prime(0);
-    float py = x_prime(1);
-    float vx = x_prime(2);
-    float vy = x_prime(3);
+    const float px = x_prime(0);
+    const float py = x_prime(1);
+    const float vx = x_prime(2);
+    const float vy = x_prime(3);
     double rho = sqrt(px*px + py*py);
-    double theta = atan2(py, px);
-    double rho_dot;
+    double theta, rho_dot;
     if (fabs(rho) < eps) {
         rho_dot = 0;
+        theta = 0;
     } else {
+        theta = atan2(py, px);
         rho_dot = (px*vx + py*vy) / rho;
     }
     
@@ -67,6 +73,8 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
      For radar measurements, the functions that map the x vector [px, py, vx, vy] to polar coordinates are non-linear. Instead of using H to calculate y = z - H * x', for radar measurements you'll have to use the equations that map from cartesian to polar coordinates: y = z - h(x').
      */
     VectorXd y = z - h(x_);
+    // Normalize theta to ensure that resulting y delta is within -pi / +pi range
+    NormalizeAngle(y(1));
     // Calculations are essentially the same to the Update function
     GenericUpdate(y);
 }
@@ -82,5 +90,5 @@ void KalmanFilter::GenericUpdate(const VectorXd &y) {
     x_ = x_ + (K * y);
     long x_size = x_.size();
     MatrixXd I = MatrixXd::Identity(x_size, x_size);
-    P_ = (I - K * H_) * P_;
+    P_ -= K * H_ * P_;
 }
