@@ -39,7 +39,7 @@ private:
     long long previous_timestamp_;
     
     // Update process covariance matrix
-    Eigen::MatrixXd update_Q(float dt, Eigen::VectorXd a);
+    Eigen::MatrixXd update_Q(float dt, float a);
     
     // tool object used to compute Jacobian and RMSE
     Tools tools;

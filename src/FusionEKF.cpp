@@ -59,27 +59,25 @@ FusionEKF::FusionEKF() {
 */
 FusionEKF::~FusionEKF() {}
 
-Eigen::MatrixXd FusionEKF::update_Q(float dt, Eigen::VectorXd a) {
+Eigen::MatrixXd FusionEKF::update_Q(float dt, float var_a) {
     
     Eigen::MatrixXd Q = Eigen::MatrixXd().Zero(4, 4);
     
-    if (dt==0 || a.size()!=2) {
+    if (dt==0) {
         cout << "Error: incorrect inputs. dt should be greater than 0 (dt value = " << dt
-        << ") and 'a' size should be equal to 2 (a size = " << a.size() << ").";
+        << ")/n";
         return Q;
     }
     
-    float dt2_05 = 0.5*dt*dt;
-    Eigen::MatrixXd Qv = a * a.transpose();
-    Qv(0,1) = 0;
-    Qv(1,0) = 0;
-    Eigen::MatrixXd G = Eigen::MatrixXd(4,2);
-    G <<
-    dt2_05,0,
-    0, dt2_05,
-    dt,0,
-    0,dt;
-    Q = G * Qv * G.transpose();
+    const float dt_2 = dt * dt;
+    const float dt_3 = dt_2 * dt;
+    const float dt_4 = dt_3 * dt;
+    
+    Q <<  dt_4/4*var_a, 0, dt_3/2*var_a, 0,
+    0, dt_4/4*var_a, 0, dt_3/2*var_a,
+    dt_3/2*var_a, 0, dt_2*var_a, 0,
+    0, dt_3/2*var_a, 0, dt_2*var_a;
+    
     return Q;
 }
 
@@ -142,9 +140,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     ekf_.F_(1, 3) = dt;
     // * Update the process noise covariance matrix.
     // * Use noise_ax = 9 and noise_ay = 9 for your Q matrix.
-    Eigen::VectorXd a = Eigen::VectorXd(2);
-    a << 9, 9;
-    
+    float a = 9.0;
     ekf_.Q_ = update_Q(dt, a);
     
     ekf_.Predict();
